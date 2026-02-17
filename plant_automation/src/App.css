@@ -7,12 +7,12 @@ body {
 .center {
   background: linear-gradient(to top, #000000, #000000, #333333, #333333);
   background-size: cover;
-  background-size: 100% 8px;
+  background-size: 100% 6px;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  filter: blur(.8px);
+  filter: blur(.99px);
   
 
 }
@@ -23,7 +23,7 @@ body {
 } 
 @keyframes scanlines {
   from {
-    background-position: 0 0;
+    background-position: 0 10;
   }
   to {
     background-position: 0 -20px;
@@ -39,30 +39,36 @@ body {
 
 .sampleButton{
 padding:20px;
-font-size: 34px;
+font-size: 64px;
 background-color: transparent ;
-color:  #00ff00;
-border-color:  #00ff00;
+color:  rgba(0, 255, 0, 0.399);
+border-color:  rgba(0, 255, 0, 0.399);
 border-style: solid;
+border-width: 5px;
 font-family: "VT323", monospace;
 font-weight: 400;
 font-style: normal;
-text-shadow: 0 0 10px #00ff00;
-box-shadow: 0 0 10px #00ff00;
+text-shadow: 0 0 8px #00ff00;
+box-shadow: 0 0 8px #00ff00;
 filter: blur(1px);
 
 }
+
+/* Will control the rate and range of the green underglow when hovering over the button */
 @media screen{
   .sampleButton:hover {
-    animation:  textGlow  4s linear ;
+    animation:  infinite textGlow  3s linear ;
   }
 } 
 @keyframes textGlow {
   from {
-    text-shadow: 0 0 10px #00ff00;
-    box-shadow: 0 0 10px #00ff00;  }
+    text-shadow: 0 0 8px #00ff00;
+    box-shadow: 0 0 8px #00ff00;  }
   to {
-    text-shadow: 0 0 20px #00ff00;
-box-shadow: 0 0 20px #00ff00;-position: 0 -30px;
-  }
+    text-shadow: 0 0 25px #00ff00;
+box-shadow: 0 0 25px #00ff00;
+}
+  to {
+    text-shadow: 0 0 8px #00ff00;
+    box-shadow: 0 0 8px #00ff00; }
 }
