@@ -1,38 +1,68 @@
-.App {
-  text-align: center;
+@import url(https://fonts.googleapis.com/css?family=VT323);
+
+body {
+  margin: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.center {
+  background: linear-gradient(to top, #000000, #000000, #333333, #333333);
+  background-size: cover;
+  background-size: 100% 8px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
+  align-items: center;
+  min-height: 100vh;
+  filter: blur(.8px);
+  
 
-.App-link {
-  color: #61dafb;
 }
-
-@keyframes App-logo-spin {
+@media screen{
+  .center {
+    animation: scanlines infinite 55s linear ;
+  }
+} 
+@keyframes scanlines {
   from {
-    transform: rotate(0deg);
+    background-position: 0 0;
   }
   to {
-    transform: rotate(360deg);
+    background-position: 0 -20px;
+  }
+}
+.buttonHolder {
+  width: 30vw;
+  height: 60vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.sampleButton{
+padding:20px;
+font-size: 34px;
+background-color: transparent ;
+color:  #00ff00;
+border-color:  #00ff00;
+border-style: solid;
+font-family: "VT323", monospace;
+font-weight: 400;
+font-style: normal;
+text-shadow: 0 0 10px #00ff00;
+box-shadow: 0 0 10px #00ff00;
+filter: blur(1px);
+
+}
+@media screen{
+  .sampleButton:hover {
+    animation:  textGlow  4s linear ;
+  }
+} 
+@keyframes textGlow {
+  from {
+    text-shadow: 0 0 10px #00ff00;
+    box-shadow: 0 0 10px #00ff00;  }
+  to {
+    text-shadow: 0 0 20px #00ff00;
+box-shadow: 0 0 20px #00ff00;-position: 0 -30px;
   }
 }
