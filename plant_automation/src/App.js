@@ -7,14 +7,15 @@ function App() {
   }
   return (
 
-
-  <div className="crtDisplay">
-      <div className="center">
-        <div className="buttonHolder">
-          <button className="sampleButton" onClick = {alerted} >Testing button</button>
+    <div className="vignette">
+    <div className="crtDisplay">
+        <div className="center">
+          <div className="buttonHolder">
+            <button className="sampleButton" onClick = {alerted} >Testing button</button>
+          </div>
         </div>
-      </div>
   </div>
+    </div>
   );
 }
 
