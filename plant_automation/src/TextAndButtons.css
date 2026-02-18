@@ -1,0 +1,33 @@
+
+body {
+  margin: 0;
+  scroll-behavior:smooth;
+  overflow: hidden;
+}
+
+@media screen{
+  .sampleButton:hover {
+    animation:  infinite textGlow  1s linear ;
+    cursor: pointer;
+  }
+} 
+.sampleButton:active{
+  color:  rgba(0, 255, 0);
+  border-color:  rgba(0, 255, 0);
+}
+@keyframes textGlow {
+  0% {
+
+    text-shadow: 0 0 3px #00ff00;
+    box-shadow: 0 0 12px #00ff00;  }
+  40% {
+
+    text-shadow: 0 0 5px #00ff00;
+    box-shadow: 0 0 25px #00ff00;
+}
+  80% {
+
+    text-shadow: 0 0 3px #00ff00;
+    box-shadow: 0 0 12px #00ff00; }
+    
+}
