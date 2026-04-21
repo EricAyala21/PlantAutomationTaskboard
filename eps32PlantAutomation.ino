@@ -40,13 +40,15 @@ struct MQTTmessage{
   char topic[50];
   char payload[50];
 };
-
+//subscribes to all the clients 
+//sets up the connection to the mqtt server
 void mqttReconnect(){
   while(!mqttClient.connected()){
     Serial.println("Reconnecting MQTT...");
     String clientId = "ESP32Client-" +String(random(0xffff),HEX);
     if(mqttClient.connect(clientId.c_str(), mqtt_username, mqtt_password)){
       Serial.println("MQTT connected");
+      
       mqttClient.subscribe("bedroom/esp32/waterPump");
       mqttClient.subscribe("bedroom/esp32/lightSwitch");
 
@@ -60,6 +62,8 @@ void mqttReconnect(){
     }
   }
 }
+//sends messages from the mqtt server from the web controller 
+//seperates it by topic and pushes it to the proper task
 void mqttCallback(char* topic, byte* payload, unsigned int length){
   if(length >= 50)
     length = 49; // protects the size of the queue
@@ -79,6 +83,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length){
     xTaskNotify(autoMode,value,eSetValueWithOverwrite);
   }
 }
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -100,7 +105,7 @@ void setup() {
   pinMode(LIGHT_SWITCH,OUTPUT);
   pinMode(MSENSE2,INPUT);
   pinMode(MSENSE3,INPUT);
-
+  //sets up the indivisual task that the esp32 will be running every task in its designated time to allow for seamless process integration
   xTaskCreatePinnedToCore(mqttLoop,"loop",8192,NULL,1,&mqttTaskHandle,0);
   xTaskCreatePinnedToCore(setPump,"pump",8192,NULL,5,&pumpTaskHandle,1);
   xTaskCreatePinnedToCore(setLight,"light",8192,NULL,4,&lightSwitch,1);
@@ -110,8 +115,9 @@ void setup() {
 
 
 }
-
-void mqttLoop(void *paramter){//sends the data from the queue and also loops the mqtt.loop 
+//sends the data from the queue and also loops the mqtt.loop 
+//does it by dequeing the first item in the queue and publishing it to the topic to the mqtt server where the react server will recieve it
+void mqttLoop(void *paramter){
 
   while(true){
     if(!mqttClient.connected())
@@ -125,8 +131,9 @@ void mqttLoop(void *paramter){//sends the data from the queue and also loops the
   vTaskDelay(10/portTICK_PERIOD_MS); //check for any new messages every 10 ms
   }
 }
-
-void setPump(void *parameter){ //sets up the pump is asleep by default 
+//Water pump control 
+//is off by the default and turns on wheather the user turns on the pump and turns off the pump when the timer ends
+void setPump(void *parameter){ 
  uint32_t value;
   while(true){
     if(xTaskNotifyWait(0x00,ULONG_MAX,&value,portMAX_DELAY) == pdTRUE){
@@ -194,11 +201,11 @@ void moistureSensor(void *parameter){//sends the moisture data to the queue and 
 
 
 }
-
+//returns water moister data and averages the data of 2 sensors
 float moisterData(){
   float ms2 = analogRead(MSENSE2);
   float ms3 = analogRead(MSENSE3);
-  int avg = (map(ms2,975,2672,0,100) +map(ms3,902,2707,0,100))/2;
+  int avg = ((map(ms2,975,2672,0,100) +map(ms3,902,2707,0,100))/2;
   return avg;
 }
 
@@ -214,7 +221,7 @@ void lightSensor(void *parameter){//sends light data to the queue and is on by d
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
-
+//TO DO make a decision tree for when to water the plant and when to turn on the light for the plant
 void automaticPlant(void *paramter){//will control when the light and pump will be activated based on the data from the sensors
  uint32_t value;
   while(true){
