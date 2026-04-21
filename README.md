@@ -39,6 +39,6 @@ Contributors names and contact info
 ## Acknowledgments
 
 
-*[https://www.youtube.com/watch?v=ojhrVsBs0nM]
-*[https://medium.com/@dovid11564/using-css-animations-to-mimic-the-look-of-a-crt-monitor-3919de3318e2]
-*[https://aleclownes.com/2017/02/01/crt-display.html]
+*[Science Buddies](https://www.youtube.com/watch?v=ojhrVsBs0nM)
+*[Dovid Edelkopf](https://medium.com/@dovid11564/using-css-animations-to-mimic-the-look-of-a-crt-monitor-3919de3318e2)
+*[Alec Lownes](https://aleclownes.com/2017/02/01/crt-display.html)
