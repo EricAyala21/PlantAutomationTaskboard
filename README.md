@@ -1,27 +1,64 @@
 # Automatic Plant and web Controller
 
-This systems goal is to take care of my plants with me either setting it up to automatically take care of itself or with me giving the plant water, or giving it light using the web controller
 
 ## Description
 
-An in-depth paragraph about your project and overview of use.
+An end-to-end IoT ecosystem designed to automate plant care using an **ESP32** microcontroller and a **React-based Web Controller**. This system bridges the gap between hardware sensors and a digital interface, allowing for autonomous plant maintenance or manual remote control via a retro-styled dashboard.
+
+### Core Functions:
+* **Real-time Monitoring:** Streams soil moisture and ambient light levels to the web.
+* **Manual Overrides:** Trigger the water pump or grow lights instantly from your browser.
+* **Autonomous Mode:** (Work in Progress) Decision-tree logic to water plants and toggle lights based on sensor thresholds.
+* **Retro UI:** A custom-styled React dashboard featuring CRT monitor effects and SVG animations.
+
 
 ## Getting Started
 
 ### Dependencies
 
-* Describe any prerequisites, libraries, OS version, etc., needed before installing program.
-* ex. Windows 10
+### Hardware / Firmware
+* **Board:** ESP32 (DevKit V1)
+* **Libraries:**
+    * `WiFi.h` & `WiFiClientSecure.h`
+    * `PubSubClient` (for MQTT)
+    * `Arduino.h`
+
+### Software / Web
+* **Framework:** React.js
+* **Styling:** CSS Animations (CRT flicker/scanlines)
+* **MQTT Client:** Browser-based MQTT library
+
+---
 
 
 
-### Executing program
+### 1. Hardware Setup
+1.  Open the source code in the Arduino IDE.
+2.  Configure your credentials:
+    ```cpp
+    const char* ssid = "YOUR_WIFI_NAME";
+    const char* password = "YOUR_WIFI_PASSWORD";
+    const char* mqtt_broker = "YOUR_MQTT_BROKER_URL";
+    ```
+3.  Connect your components:
+    * **Water Pump:** Pin 22
+    * **Light Relay:** Pin 2
+    * **Moisture Sensors:** Pins 35, 32
+    * **Light Sensor:** Pin 33
+4.  Flash the code to your ESP32.
 
-* How to run the program
-* Step-by-step bullets
-```
-code blocks for commands
-```
+### 2. Web Controller Setup
+1.  Navigate to the project folder.
+2.  Install the required packages:
+    ```bash
+    npm install
+    ```
+3.  Start the development server:
+    ```bash
+    npm start
+    ```
+
+---
 
 
 
