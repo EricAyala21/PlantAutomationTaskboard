@@ -1,0 +1,263 @@
+#line 1 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+#include <Arduino.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+
+// Wi-Fi credentials
+const char* ssid = "";
+const char* password = "";
+
+// MQTT broker
+const char* mqtt_broker = "";
+const int mqtt_port = 8883;
+const char* mqtt_username = "";
+const char* mqtt_password = "";
+
+// Pins
+#define WATER_PUMP 22
+#define LIGHT_SWITCH 2
+#define MSENSE2 35
+#define MSENSE3 32
+#define LSENSE 33
+
+// Tasks
+TaskHandle_t moistureTaskHandle = NULL;
+TaskHandle_t lightTaskHandle = NULL;
+TaskHandle_t lightSwitch = NULL;
+TaskHandle_t pumpTaskHandle = NULL;
+TaskHandle_t mqttTaskHandle = NULL;
+TaskHandle_t autoMode = NULL;
+
+// Queue for messages
+QueueHandle_t mqttQueue;
+
+
+// MQTT client
+WiFiClientSecure wifiClient;
+PubSubClient mqttClient(wifiClient);
+
+struct MQTTmessage{
+  char topic[50];
+  char payload[50];
+};
+//subscribes to all the clients 
+//sets up the connection to the mqtt server
+#line 45 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void mqttReconnect();
+#line 67 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void mqttCallback(char* topic, byte* payload, unsigned int length);
+#line 87 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void setup();
+#line 120 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void mqttLoop(void *paramter);
+#line 136 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void setPump(void *parameter);
+#line 153 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void setLight(void *parameter);
+#line 191 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void moistureSensor(void *parameter);
+#line 205 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+float moisterData();
+#line 212 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void lightSensor(void *parameter);
+#line 225 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void automaticPlant(void *paramter);
+#line 236 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void loop();
+#line 45 "C:\\Users\\Eric\\PlantAutomation\\PlantAutomationTaskboard\\PlantAutomationTaskboard.ino"
+void mqttReconnect(){
+  while(!mqttClient.connected()){
+    Serial.println("Reconnecting MQTT...");
+    String clientId = "ESP32Client-" +String(random(0xffff),HEX);
+    if(mqttClient.connect(clientId.c_str(), mqtt_username, mqtt_password)){
+      Serial.println("MQTT connected");
+      
+      mqttClient.subscribe("bedroom/esp32/waterPump");
+      mqttClient.subscribe("bedroom/esp32/lightSwitch");
+
+      mqttClient.subscribe("check/esp32/light");
+      mqttClient.subscribe("check/esp32/autoMode");
+
+    }else{
+      Serial.print("MQTT failed rc=");
+      Serial.println(mqttClient.state());
+      delay(5000);
+    }
+  }
+}
+//sends messages from the mqtt server from the web controller 
+//seperates it by topic and pushes it to the proper task
+void mqttCallback(char* topic, byte* payload, unsigned int length){
+  if(length >= 50)
+    length = 49; // protects the size of the queue
+  char msg[50];
+  
+  memcpy(msg,payload,length);
+  msg[length] = '\0';
+  uint32_t value = static_cast<uint32_t>(atoi(msg));
+  //checks to see which topic it is in to wake up each function when needed 
+  
+  if(strcmp(topic,"bedroom/esp32/waterPump") == 0){
+
+    xTaskNotify(pumpTaskHandle,value,eSetValueWithOverwrite);
+  }else if(strcmp(topic,"bedroom/esp32/lightSwitch") == 0){
+    xTaskNotify(lightSwitch,value,eSetValueWithOverwrite);
+  }else if(strcmp(topic,"check/esp32/autoMode") == 0){
+    xTaskNotify(autoMode,value,eSetValueWithOverwrite);
+  }
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+
+  WiFi.begin(ssid,password);
+  while(WiFi.status() != WL_CONNECTED){
+    Serial.print(".");
+    delay(500);
+
+  }
+  Serial.println("\nWiFi connected");
+  mqttQueue = xQueueCreate(5,sizeof(struct MQTTmessage));
+
+  wifiClient.setInsecure();
+  mqttClient.setServer(mqtt_broker,mqtt_port);
+  mqttClient.setCallback(mqttCallback);
+
+  pinMode(WATER_PUMP,OUTPUT);
+  pinMode(LIGHT_SWITCH,OUTPUT);
+  pinMode(MSENSE2,INPUT);
+  pinMode(MSENSE3,INPUT);
+  //sets up the indivisual task that the esp32 will be running every task in its designated time to allow for seamless process integration
+  xTaskCreatePinnedToCore(mqttLoop,"loop",8192,NULL,1,&mqttTaskHandle,0);
+  xTaskCreatePinnedToCore(setPump,"pump",8192,NULL,5,&pumpTaskHandle,1);
+  xTaskCreatePinnedToCore(setLight,"light",8192,NULL,4,&lightSwitch,1);
+  xTaskCreatePinnedToCore(moistureSensor,"moisure",8192,NULL,3,&moistureTaskHandle,1);
+  xTaskCreatePinnedToCore(lightSensor,"lSensor",8192,NULL,2,&lightTaskHandle,1);
+  xTaskCreatePinnedToCore(automaticPlant,"auto",8192,NULL,6,&autoMode,1);
+
+
+}
+//sends the data from the queue and also loops the mqtt.loop 
+//does it by dequeing the first item in the queue and publishing it to the topic to the mqtt server where the react server will recieve it
+void mqttLoop(void *paramter){
+
+  while(true){
+    if(!mqttClient.connected())
+      mqttReconnect();
+    mqttClient.loop();
+
+  MQTTmessage message;
+  if( xQueueReceive(mqttQueue, &message, pdMS_TO_TICKS(10)) == pdTRUE){//checks if the connection of the queue is true 
+      mqttClient.publish(message.topic, message.payload);//only way to publish any data to the mqtt client
+  }
+  vTaskDelay(10/portTICK_PERIOD_MS); //check for any new messages every 10 ms
+  }
+}
+//Water pump control 
+//is off by the default and turns on wheather the user turns on the pump and turns off the pump when the timer ends
+void setPump(void *parameter){ 
+ uint32_t value;
+  while(true){
+    if(xTaskNotifyWait(0x00,ULONG_MAX,&value,portMAX_DELAY) == pdTRUE){
+      if(value == 0 ){
+        digitalWrite(WATER_PUMP,LOW);
+      }else if (value == 1){
+        digitalWrite(WATER_PUMP,HIGH);
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        Serial.println("waterpump is on");
+      }
+    }
+      digitalWrite(WATER_PUMP,LOW);
+
+  }
+}
+
+void setLight(void *parameter){ //sets up the light switch and is off by default 
+ uint32_t value;
+  while(true){
+   if(xTaskNotifyWait(0x00,ULONG_MAX,&value,portMAX_DELAY) == pdTRUE){
+    if (value == 1){
+      Serial.println("Light is on");
+      int totalTime = 0;
+      uint32_t holder = 0;
+      digitalWrite(LIGHT_SWITCH,HIGH);
+      Serial.println("Signal High");
+
+      while(totalTime < 10000){//this allows for the user to turn off the light before the 30 minute timer if they choose so
+        if(xTaskNotifyWait(0x00,ULONG_MAX,&holder,0) == pdTRUE){
+          if (holder == 0){
+            digitalWrite(LIGHT_SWITCH,LOW);
+            break;
+          }
+
+        }
+          totalTime += 100;
+          vTaskDelay(100 / portTICK_PERIOD_MS);
+      }
+      digitalWrite(LIGHT_SWITCH,LOW);
+
+    }else if( value == 0){
+      digitalWrite(LIGHT_SWITCH,LOW);
+      Serial.println("Light is LOW");
+
+    }
+      MQTTmessage msg;
+      snprintf(msg.payload, sizeof(msg.payload), "%d", 0);
+      snprintf(msg.topic,sizeof(msg.topic),"check/esp32/light");
+      xQueueSend(mqttQueue,&msg,portMAX_DELAY);
+
+   }
+  }
+}
+
+void moistureSensor(void *parameter){//sends the moisture data to the queue and is on by default 
+  while(true){
+    MQTTmessage msg;
+    int avg = moisterData();
+    snprintf(msg.payload, sizeof(msg.payload), "%d", 100 - avg);
+    snprintf(msg.topic,sizeof(msg.topic),"bedroom/esp32/sensor/moisture");
+    xQueueSend(mqttQueue,&msg,portMAX_DELAY);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+  
+
+
+}
+//returns water moister data and averages the data of 2 sensors
+float moisterData(){
+  float ms2 = analogRead(MSENSE2);
+  float ms3 = analogRead(MSENSE3);
+  int avg = ((map(ms2,975,2672,0,100) +map(ms3,902,2707,0,100))/2;
+  return avg;
+}
+
+void lightSensor(void *parameter){//sends light data to the queue and is on by default
+  while(true){
+    MQTTmessage msg;
+    int lightSense = analogRead(LSENSE);
+    int fixedValues = map(lightSense,0,2432,0, 100);
+    snprintf(msg.payload, sizeof(msg.payload), "%d", fixedValues);
+    snprintf(msg.topic,sizeof(msg.topic),"bedroom/esp32/sensor/light");
+    Serial.println(fixedValues);
+    xQueueSend(mqttQueue,&msg,portMAX_DELAY);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+}
+//TO DO make a decision tree for when to water the plant and when to turn on the light for the plant
+void automaticPlant(void *paramter){//will control when the light and pump will be activated based on the data from the sensors
+ uint32_t value;
+  while(true){
+    if(xTaskNotifyWait(0x00,ULONG_MAX,&value,portMAX_DELAY) == pdTRUE){
+      
+    }
+
+  }
+}
+
+
+void loop() {
+
+}
+
