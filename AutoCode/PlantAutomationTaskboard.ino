@@ -31,7 +31,9 @@ TaskHandle_t autoMode = NULL;
 
 // Queue for messages
 QueueHandle_t mqttQueue;
-
+//sensor objects
+MoistureSensor sensorOne;
+MoistureSensor sensorTwo;
 
 // MQTT client
 WiFiClientSecure wifiClient;
@@ -88,6 +90,8 @@ void mqttCallback(char* topic, byte* payload, unsigned int length){
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  sensorOne.MoistureSensor(MSENSE2);
+  sensorTwo.MoistureSensor(MSENSE3);
 
   WiFi.begin(ssid,password);
   while(WiFi.status() != WL_CONNECTED){
@@ -104,8 +108,7 @@ void setup() {
 
   pinMode(WATER_PUMP,OUTPUT);
   pinMode(LIGHT_SWITCH,OUTPUT);
-  pinMode(MSENSE2,INPUT);
-  pinMode(MSENSE3,INPUT);
+;
   //sets up the indivisual task that the esp32 will be running every task in its designated time to allow for seamless process integration
   xTaskCreatePinnedToCore(mqttLoop,"loop",8192,NULL,1,&mqttTaskHandle,0);
   xTaskCreatePinnedToCore(setPump,"pump",8192,NULL,5,&pumpTaskHandle,1);
@@ -206,7 +209,7 @@ void moistureSensor(void *parameter){//sends the moisture data to the queue and 
 float moisterData(){
   float ms2 = analogRead(MSENSE2);
   float ms3 = analogRead(MSENSE3);
-  int avg = ((map(ms2,975,2672,0,100) +map(ms3,902,2707,0,100))/2;
+  int avg = ((map(ms2,975,2672,0,100) +map(ms3,902,2707,0,100)))/2;
   return avg;
 }
 
